@@ -4,7 +4,7 @@
  * not use this file except in compliance with the License. You may
  * obtain a copy of the License at
  *
- *     http://opensource.org/licenses/ECL-2.0
+ *     http://www.osedu.org/licenses/ECL-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS IS"
@@ -28,19 +28,18 @@ var config = module.exports.config = {};
  * @param  {String}    path            The path to the UI static assets
  */
 config.ui = {
-    'path': '../3akai-ux'
+    'path': '/opt/3akai-ux'
 };
 
 // Cassandra related config information.
 config.cassandra = {
-    'hosts': ['127.0.0.1:9160'],
+    'hosts': [ '127.0.0.1' ],
     'keyspace': 'oae',
     'user': '',
     'pass': '',
-    'timeout': 3000,
+    'timeout': 5000,
     'replication': 1,
-    'strategyClass': 'SimpleStrategy',
-    'cqlVersion': '2.0.0'
+    'strategyClass': 'SimpleStrategy'
 };
 
 // The redis related configuration information.
@@ -62,26 +61,21 @@ config.redis = {
  *
  * Configuration namespace for servers.
  *
- * @param  {String}     globalAdminAlias            The tenant alias that will be used for the global admins
- * @param  {String}     globalAdminHost             The hostname on which the global admin server can be reached by users
- * @param  {Number}     globalAdminPort             The network port on which the global admin express server can run
- * @param  {String}     [serverInternalAddress]     The internal hostname on which the server can be reached by OAE services such as the preview processor
- * @param  {Number}     tenantPort                  The network port on which the tenant express server can run
- * @param  {Boolean}    useHttps                    Whether or not the server is accessible via HTTPS. Hilary will *not* expose an HTTPS server, it's up to a frontend server such as Apache or Nginx to deal with the actual delivery of HTTPS traffic. This flag is mainly used to generate correct backlinks to the web application
- * @param  {Boolean}    [strictHttps]               Whether or not the server is using a valid SSL certificate. If `true`, any attempts to connect to the REST endpoints using an invalid certificate should result in an error and not be ignored. If `false`, a valid certificate will not be required
+ * @param   {String}    globalAdminAlias        The tenant alias that will be used for the global admins.
+ * @param   {String}    globalAdminHost         The hostname on which the global admin server can be reached by users.
+ * @param   {Number}    globalAdminPort         The network port on which the global admin express server can run.
+ * @param   {Number}    tenantPort              The network port on which the tenant express server can run.
+ * @param  {Boolean}    useHttps                Whether or not the server is accessible via HTTPS. Hilary will *not* expose an HTTPS server, it's up to a frontend server such as Apache or Nginx to deal with the actual delivery of HTTPS traffic. This flag is mainly used to generate correct backlinks to the web application.
  */
 config.servers = {
     'globalAdminAlias': 'admin',
-    'globalAdminHost': 'admin.oae.com',
+    'globalAdminHost': 'admin.vagrant.oae',
     'globalAdminPort': 2000,
-    'serverInternalAddress': null,
+    'serverInternalAddress': '127.0.0.1',
     'tenantPort': 2001,
     'useHttps': false,
     'strictHttps': true
 };
-
-var tmpDir = process.env.TMP || process.env.TMPDIR || process.env.TEMP || '/tmp' || process.cwd();
-tmpDir += '/oae';
 
 /**
  * `config.files`
@@ -97,13 +91,13 @@ tmpDir += '/oae';
  * @param  {String}    limit                    The maximum file upload size, accepted formats look like "5mb", "200kb", "1gb". You should also adjust your front-end proxy (e.g., Nginx, Apache) to also handle files of this size
  */
 config.files = {
-    'tmpDir': tmpDir,
-    'uploadDir': tmpDir + '/uploads',
+    'localStorageDirectory': '/opt/files',
+    'tmpDir': '/tmp',
+    'uploadDir': '/tmp/uploads',
     'cleaner': {
         'enabled': true,
         'interval': 2*60*60
     },
-    'localStorageDirectory': '../files',
     'limit': '4096mb'
 };
 
@@ -111,14 +105,14 @@ config.files = {
 // It's strongly recommended that you change this value.
 // Make sure that this value is the same accross each app server.
 config.cookie = {
-    'secret': 'this secret will be used to sign your cookies, change me!'
+    'secret': 'SODIFJ984FJA984JAFP98WF4PAW984F984FJ9'
 };
 
 config.log = {
     'streams': [
         {
             'level': 'info',
-            'stream': process.stdout
+            'path': '/opt/oae/server.log'
         }
     ],
     'serializers': {
@@ -128,25 +122,21 @@ config.log = {
     }
 };
 
-/**
- * `config.telemetry`
- *
- * Configuration namespace for API telemetry
- *
- * @param  {Boolean}    [enabled]               Whether or not to enable telemetry. When `false`, no data will be published to the publishers. Default: `false`
- * @param  {Number}     [publishInterval]       How often (in seconds) to push data to the configured publisher. Default: 30 seconds
- * @param  {Number}     [resetInterval]         How often (in seconds) telemetry counters should be reset to 0. You want this to be fairly large as its reset can disrupt rate statistics for one publish interval on each reset. Set this to a value that controls insane numeric overflows such as 2^31-1. Default: 86400 seconds (once per day)
- * @param  {String}     [publisher]             The publisher implementation to use to publish data. Should be one of `console` or `circonus`. Default: `console`
- * @param  {Object}     [circonus]              Custom circonus configuration, only applicable if the selected publisher is `circonus` (required param if circonus is the publisher)
- * @param  {String}     [circonus.url]          The Circonus url to which data should be published (required param if circonus is the publisher)
- */
+// This object holds the configuration for the telemetry monitoring.
+// By default telemetry is disabled.
+// We currently support two types of publishers:
+// * displaying data on the console
+// * pushing data to circonus (via httptrap and redis)
 config.telemetry = {
     'enabled': false,
-    'publishInterval': 30,
-    'resetInterval': 86400,
     'publisher': 'console',
     'circonus': {
-        'url': 'https://trap.noit.circonus.net/module/httptrap/check-uuid/secret-here'
+        'url': 'https://trap.noit.circonus.net/module/httptrap/check-uuid/secret-here',
+        'circonusInterval': 30000,
+        'redisInterval': 20000
+    },
+    'console': {
+        'interval': 5000
     }
 };
 
@@ -164,10 +154,7 @@ config.telemetry = {
  */
 config.search = {
     'hosts': [
-        {
-            'host': 'localhost',
-            'port': 9200
-        }
+        { 'host': '127.0.0.1', 'port': 9200 },
     ],
     'index': {
         'name': 'oae',
@@ -191,8 +178,7 @@ config.search = {
                     }
                 }
             }
-        },
-        'destroyOnStartup': false
+        }
     },
     'processIndexJobs': true
 };
@@ -202,14 +188,14 @@ config.search = {
  *
  * Configuration namespace for the message queue (RabbitMQ).
  *
- * @param  {Object}     connection              The connection description
- * @param  {String}     connection.host         The host for the connection
- * @param  {Number}     connection.port         The port for the connection
+ * @param   {Object}    connection              The connection description
+ * @param   {String}    connection.host         The host for the connection
+ * @param   {Number}    connection.port         The port for the connection
  * @param  {Boolean}    [purgeQueuesOnStartup]  If `true`, the application will **delete** all messages in a queue when a worker is first bound. This setting only takes effect if the NODE_ENV environment variable is not set to `production` to indicate a production environment. Default: `false`
  */
 config.mq = {
     'connection': {
-        'host': 'localhost',
+        'host': [ '127.0.0.1' ],
         'port': 5672
     },
     'purgeQueuesOnStartup': false
@@ -237,14 +223,14 @@ config.mq = {
  * @param  {String}      credentials.password           The password to login with on the global admin server
  */
 config.previews = {
-    'enabled': false,
-    'dir': tmpDir + '/previews',
+    'enabled': true,
+    'dir': '/tmp/previews',
     'office': {
-        'binary': 'soffice.bin',
+        'binary': '/usr/bin/soffice',
         'timeout': 120000
     },
     'pdf': {
-        'binary': 'pdftk',
+        'binary': '/usr/bin/pdftk',
         'timeout': 120000
     },
     'link': {
@@ -266,7 +252,7 @@ config.previews = {
  * @param  {String}    key     This key will be used to sign URLs like profile pictures, content previews, etc.. . It's vital to the security of the system that you change this in production.
  */
 config.signing = {
-    'key': 'The default signing key, please change me.'
+    'key': 'A;SLDFJ984FJW398FJWP4GO5IJSLRTKGJ'
 };
 
 /**
@@ -278,12 +264,12 @@ config.signing = {
  * @param  {Number}     [activityTtl]                   The time-to-live (in seconds) for generated activities. After this period of time, an activity in an activity feed is lost permanently. Defaults to 2 weeks
  * @param  {Number}     [aggregateIdleExpiry]           The amount of time (in seconds) an aggregate can be idle until it expires. The "idle" time of an aggregate is reset when a new activity occurs that matches the aggregate. Defaults to 3 hours
  * @param  {Number}     [aggregateMaxExpiry]            An upper-bound on the amount of time (in seconds) for which an aggregate can live. Defaults to 1 day
- * @param  {Number}     [numberOfProcessingBuckets]     The number of buckets available for parallel processing of activities. Defaults to 3
+ * @param  {Number}     [numberOfProcessingBuckets]     The number of buckets available for parallel processing of activities. Defaults to 5
  * @param  {Number}     [collectionExpiry]              The maximum amount of time (in seconds) a processing bucket can be locked for at one time. If this is not long enough for an activity processor to collect the number of activities as configured by `collectionBatchSize`, then it will be possible for multiple processors to collect the same bucket concurrently. This will result in duplicate activities, which is not desired. Defaults to 1 minute
  * @param  {Number}     [maxConcurrentCollections]      The maximum number of concurrent collection cycles that can be active on a process at once. Defaults to 3
- * @param  {Number}     [maxConcurrentRouters]          The maximum number of activities that will be routed by one node at one time. This should be used to ensure activities are not routed faster than they can be collected, to ensure the redis collection buckets do not grow in size uncontrollably under unanticipated load. Defaults to 5
+ * @param  {Number}     [maxConcurrentRouters]          The maximum number of activities that will be routed by one node at one time. This should be used to ensure activities are not routed faster than they can be collected, to ensure the redis collection buckets do not grow in size uncontrollably under unanticipated load. Defaults to 8
  * @param  {Number}     [collectionPollingFrequency]    How often (in seconds) the processing buckets are polled for new activities. If -1, polling will be disabled. If polling is disabled, activities will not function, so do not set to -1 in production. Defaults to 5 seconds.
- * @param  {Number}     [collectionBatchSize]           The number of items to process at a time when collecting bucketed activities. After one batch has been collected, the activity processor will immediately continue to process the next batch from that bucket, and so on. Defaults to 1000
+ * @param  {Number}     [collectionBatchSize]           The number of items to process at a time when collecting bucketed activities. After one batch has been collected, the activity processor will immediately continue to process the next batch from that bucket, and so on. Defaults to 500
  * @param  {Object}     [redis]                         Configuration for dedicated redis server. If not specified, will use the same pool as the rest of the container (i.e., as specified by `config.redis`)
  * @param  {String}     [redis.host]                    The host of the dedicated redis server
  * @param  {Number}     [redis.port]                    The port of the dedicated redis server
@@ -292,14 +278,14 @@ config.signing = {
  */
 config.activity = {
     'processActivityJobs': true,
-    'activityTtl': 2 * 7 * 24 * 60 * 60,    // 2 weeks (in seconds)
+    'activityTtl': 2 * 7 * 24 * 60 * 60,
+    'aggregateIdleExpiry': 3 * 60 * 60,
+    'aggregateMaxExpiry': 24 * 60 * 60,
     'numberOfProcessingBuckets': 3,
-    'aggregateIdleExpiry': 3 * 60 * 60,     // 3 hours (in seconds)
-    'aggregateMaxExpiry': 24 * 60 * 60,     // 1 day (in seconds)
-    'collectionExpiry': 60,                 // 1 minute (in seconds)
-    'maxConcurrentCollections': 3,
+    'collectionExpiry': 60,
+    'maxConcurrentCollections': 1,
     'maxConcurrentRouters': 5,
-    'collectionPollingFrequency': 5,        // 5 seconds
+    'collectionPollingFrequency': 5,
     'collectionBatchSize': 1000,
     'redis': null
 };
@@ -310,10 +296,9 @@ config.activity = {
  * Configuration namespace for emails.
  *
  * @param  {Boolean}    [debug]                     Determines whether or not email is in debug mode. If in debug mode, email messages are logged, not actually sent through any service.
- * @param  {String}     transport                   Which method of e-mail transport should be used. Either `SMTP` or `sendmail`.
  * @param  {String}     [customEmailTemplatesDir]   Specifies a directory that holds the tenant-specific email template overrides
- * @param  {Object}     [sendmailTransport]         The sendmail information for sending emails.
- * @param  {String}     [sendmailTransport.path]    The path that points to the sendmail binary.
+ * @param  {String}     transport                   Which method of e-mail transport should be used. Either `SMTP` or `sendmail`.
+ * @param  {Object}     [sendmailTransport]         An object with a `path` key which value points to the sendmail binary.
  * @param  {Object}     [smtpTransport]             The SMTP connection information for sending emails. This is the settings object that will be used by nodemailer to form an smtp connection: https://github.com/andris9/Nodemailer
  */
 config.email = {
@@ -324,11 +309,8 @@ config.email = {
         'path': '/usr/sbin/sendmail'
     },
     'smtpTransport': {
-        'service': 'Gmail',
-        'auth': {
-            'user': 'my.email@gmail.com',
-            'pass': 'myemailpassword'
-        }
+        'host': 'localhost',
+        'port': 25
     }
 };
 
@@ -340,17 +322,13 @@ config.email = {
  * @param  {String}    SAMLParserJarPath     The path towards the Java binary that can be used to decrypt SAML messages. This only needs to be configured if you want to enable the Shibboleth strategy. See https://github.com/oaeproject/SAMLParser
  */
 config.saml = {
-    'SAMLParserJarPath': ''
+    'SAMLParserJarPath': '/opt/org.sakaiproject.Hilary.SAMLParser-1.0-SNAPSHOT-jar-with-dependencies.jar'
 };
 
 /**
  * `config.etherpad`
  *
- * Configuration namespace for the etherpad logic. If you are deploying a cluster of etherpad instances, note that the order of the hosts
- * in the array is sensitive to the indexes assigned in the accompanying front-end reverse proxy configuration (e.g., Nginx). More
- * information on deploying etherpad clusters can be found here:
- *
- *  https://github.com/oaeproject/Hilary/wiki/Deployment-Documentation
+ * Configuration namespace for the etherpad logic.
  *
  * @param  {String}     apikey          The key that can be used to communicate with the etherpad API.
  * @param  {Object[]}   hosts           The internal hosts or IP addresses where etherpad instances can be found. It's important that you add *all* your etherpad instances in this array, as the number of configured servers will be used to do (some very rudimentary) sharding.
@@ -358,12 +336,14 @@ config.saml = {
  * @param  {Number}     hosts[i].port   The port number on which Hilary will be accessing the etherpad API.
  */
 config.etherpad = {
-    'apikey': '13SirapH8t3kxUh5T5aqWXhXahMzoZRA',
+    'apikey': 'LSKDFJA0W9FJAOSIDFJ',
     'hosts': [
+
         {
             'host': '127.0.0.1',
             'port': 9001
-        }
+        },
+
     ]
 };
 
